@@ -1,0 +1,100 @@
+{
+  "title": "TOU Schedule",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up TOU Schedule",
+        "description": "After adding the integration, use Options to add rate types and rules. Start by adding one or more rate types (with prices), then create rules and time periods that map to those rate types. You can also set the default rate type in Options.",
+        "data": {}
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TOU Schedule options",
+        "description": "Configure rate types (prices) and rules (when each price applies). Start with rate types, then build rules and periods.",
+        "menu_options": {
+          "rate_types": "Manage rate types",
+          "rules": "Manage rules"
+        }
+      },
+      "rate_types": {
+        "title": "Manage rate types",
+        "description": "Rate types define the price values you reference in rules. Add at least one rate type before creating rules.",
+        "menu_options": {
+          "rate_type_add": "Add rate type",
+          "rate_type_edit": "Edit rate type",
+          "rate_type_delete": "Delete rate type"
+        }
+      },
+      "rate_type_add": {
+        "title": "Add rate type",
+        "description": "Create a price tier. The ID is used by rules; keep it short and stable."
+      },
+      "rate_type_edit": {
+        "title": "Edit rate type",
+        "description": "Pick a rate type to update."
+      },
+      "rate_type_edit_detail": {
+        "title": "Update rate type",
+        "description": "Adjust the name, price, or default selection."
+      },
+      "rate_type_delete": {
+        "title": "Delete rate type",
+        "description": "Remove a rate type that is not referenced by any rule."
+      },
+      "rules": {
+        "title": "Manage rules",
+        "description": "Rules define which rate type applies by month, weekday, and time periods.",
+        "menu_options": {
+          "rule_add": "Add rule",
+          "rule_edit": "Edit rule",
+          "rule_delete": "Delete rule"
+        }
+      },
+      "rule_add": {
+        "title": "Add rule",
+        "description": "Choose the rate type and optional month/weekday filters. Then add one or more time periods."
+      },
+      "rule_edit": {
+        "title": "Edit rule",
+        "description": "Pick a rule to update."
+      },
+      "rule_edit_detail": {
+        "title": "Update rule",
+        "description": "Change the rate type and optional month/weekday filters for this rule."
+      },
+      "rule_delete": {
+        "title": "Delete rule",
+        "description": "Remove a rule and its time periods."
+      },
+      "rule_periods_menu": {
+        "title": "Rule periods",
+        "description": "Add, edit, or delete the time periods for this rule. Periods use 24-hour time.",
+        "menu_options": {
+          "period_add": "Add period",
+          "period_edit": "Edit period",
+          "period_delete": "Delete period",
+          "finish_rule": "Finish"
+        }
+      },
+      "period_add": {
+        "title": "Add period",
+        "description": "Define a start and end time for when this rule applies."
+      },
+      "period_edit": {
+        "title": "Edit period",
+        "description": "Pick a period to update."
+      },
+      "period_edit_detail": {
+        "title": "Update period",
+        "description": "Adjust the start and end time for this period."
+      },
+      "period_delete": {
+        "title": "Delete period",
+        "description": "Pick a period to remove."
+      }
+    }
+  }
+}
