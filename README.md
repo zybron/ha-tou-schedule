@@ -19,6 +19,12 @@ A Home Assistant custom integration that provides a rule-based Time-of-Use (TOU)
 2. Restart Home Assistant.
 3. Go to **Settings** → **Devices & Services** → **Add Integration** and search for **TOU Schedule**.
 
+### HACS
+
+1. Add this repository to HACS as a **Custom Repository** (category: Integration).
+2. Install **TOU Schedule** from HACS.
+3. Restart Home Assistant and add the integration.
+
 ## Configuration
 
 ### Initial Setup
