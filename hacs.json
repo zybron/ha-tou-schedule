@@ -1,6 +1,5 @@
 {
   "name": "TOU Schedule",
   "content_in_root": false,
-  "render_readme": true,
-  "zip_release": true
+  "render_readme": true
 }
