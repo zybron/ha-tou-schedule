@@ -76,15 +76,15 @@ class TouScheduleCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
 
 
-def _ensure_default_rate_type(entry: ConfigEntry) -> None:
+def _ensure_default_rate_type(hass: HomeAssistant, entry: ConfigEntry) -> None:
     options = dict(entry.options)
     rate_types = list(options.get(CONF_RATE_TYPES, []))
     if not rate_types:
         options[CONF_RATE_TYPES] = [DEFAULT_RATE_TYPE]
-        entry.hass.config_entries.async_update_entry(entry, options=options)
+        hass.config_entries.async_update_entry(entry, options=options)
 
 
-def _ensure_default_rate_selection(entry: ConfigEntry) -> None:
+def _ensure_default_rate_selection(hass: HomeAssistant, entry: ConfigEntry) -> None:
     options = dict(entry.options)
     rate_types = list(options.get(CONF_RATE_TYPES, []))
     if not rate_types:
@@ -92,7 +92,7 @@ def _ensure_default_rate_selection(entry: ConfigEntry) -> None:
     if not any(rate.get(CONF_DEFAULT) for rate in rate_types):
         rate_types[0][CONF_DEFAULT] = True
         options[CONF_RATE_TYPES] = rate_types
-        entry.hass.config_entries.async_update_entry(entry, options=options)
+        hass.config_entries.async_update_entry(entry, options=options)
 
 
 def get_active_rate_type(coordinator: TouScheduleCoordinator) -> ActiveRate:
@@ -100,8 +100,8 @@ def get_active_rate_type(coordinator: TouScheduleCoordinator) -> ActiveRate:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    _ensure_default_rate_type(entry)
-    _ensure_default_rate_selection(entry)
+    _ensure_default_rate_type(hass, entry)
+    _ensure_default_rate_selection(hass, entry)
     coordinator = TouScheduleCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
