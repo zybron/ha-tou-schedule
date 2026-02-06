@@ -53,6 +53,7 @@ WEEKDAY_OPTIONS = {
 }
 
 
+
 class TouScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for TOU schedule."""
 
@@ -121,9 +122,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
             {
                 vol.Required(CONF_ID): str,
                 vol.Required(CONF_NAME): str,
-                vol.Required(CONF_RATE): selector.NumberSelector(
-                    selector.NumberSelectorConfig(min=0, step=0.0001, mode=selector.NumberSelectorMode.BOX)
-                ),
+                vol.Required(CONF_RATE): vol.Coerce(float),
                 vol.Optional(CONF_DEFAULT, default=False): bool,
             }
         )
@@ -168,9 +167,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         schema = vol.Schema(
             {
                 vol.Required(CONF_NAME, default=target[CONF_NAME]): str,
-                vol.Required(CONF_RATE, default=target[CONF_RATE]): selector.NumberSelector(
-                    selector.NumberSelectorConfig(min=0, step=0.0001, mode=selector.NumberSelectorMode.BOX)
-                ),
+                vol.Required(CONF_RATE, default=target[CONF_RATE]): vol.Coerce(float),
                 vol.Optional(CONF_DEFAULT, default=target.get(CONF_DEFAULT, False)): bool,
             }
         )
