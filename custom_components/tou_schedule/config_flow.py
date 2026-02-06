@@ -1,0 +1,435 @@
+"""Config flow for TOU schedule."""
+from __future__ import annotations
+
+import uuid
+from typing import Any
+
+import voluptuous as vol
+
+from homeassistant import config_entries
+from homeassistant.core import callback
+from homeassistant.helpers import selector
+
+from .const import (
+    CONF_DEFAULT,
+    CONF_END,
+    CONF_ID,
+    CONF_MONTHS,
+    CONF_NAME,
+    CONF_PERIODS,
+    CONF_RATE,
+    CONF_RATE_TYPE,
+    CONF_RULES,
+    CONF_START,
+    CONF_WEEKDAYS,
+    CONF_RATE_TYPES,
+    DOMAIN,
+)
+from .validation import validate_rate_types, validate_rules
+
+MONTH_OPTIONS = {
+    1: "January",
+    2: "February",
+    3: "March",
+    4: "April",
+    5: "May",
+    6: "June",
+    7: "July",
+    8: "August",
+    9: "September",
+    10: "October",
+    11: "November",
+    12: "December",
+}
+
+WEEKDAY_OPTIONS = {
+    0: "Monday",
+    1: "Tuesday",
+    2: "Wednesday",
+    3: "Thursday",
+    4: "Friday",
+    5: "Saturday",
+    6: "Sunday",
+}
+
+
+class TouScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for TOU schedule."""
+
+    VERSION = 1
+
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
+        if user_input is not None:
+            return self.async_create_entry(title="TOU Schedule", data={})
+        return self.async_show_form(step_id="user", data_schema=vol.Schema({}))
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry):
+        return TouScheduleOptionsFlow(config_entry)
+
+
+class TouScheduleOptionsFlow(config_entries.OptionsFlow):
+    """Options flow for TOU schedule."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        self._config_entry = config_entry
+        self._options = dict(config_entry.options)
+        self._rate_type_id: str | None = None
+        self._rule_id: str | None = None
+        self._period_index: int | None = None
+
+    @property
+    def _rate_types(self) -> list[dict[str, Any]]:
+        return list(self._options.get(CONF_RATE_TYPES, []))
+
+    @property
+    def _rules(self) -> list[dict[str, Any]]:
+        return list(self._options.get(CONF_RULES, []))
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        return self.async_show_menu(
+            step_id="init",
+            menu_options={
+                "rate_types": "Manage rate types",
+                "rules": "Manage rules",
+            },
+        )
+
+    async def async_step_rate_types(self, user_input: dict[str, Any] | None = None):
+        return self.async_show_menu(
+            step_id="rate_types",
+            menu_options={
+                "rate_type_add": "Add rate type",
+                "rate_type_edit": "Edit rate type",
+                "rate_type_delete": "Delete rate type",
+            },
+        )
+
+    async def async_step_rate_type_add(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            rate_types = self._rate_types
+            rate_types.append(
+                {
+                    CONF_ID: user_input[CONF_ID],
+                    CONF_NAME: user_input[CONF_NAME],
+                    CONF_RATE: float(user_input[CONF_RATE]),
+                    CONF_DEFAULT: user_input[CONF_DEFAULT],
+                }
+            )
+            validation = validate_rate_types(rate_types)
+            if validation.valid:
+                self._options[CONF_RATE_TYPES] = rate_types
+                return await self._async_save_options()
+            errors["base"] = validation.message or "invalid"
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_ID): str,
+                vol.Required(CONF_NAME): str,
+                vol.Required(CONF_RATE): selector.NumberSelector(
+                    selector.NumberSelectorConfig(min=0, step=0.0001, mode=selector.NumberSelectorMode.BOX)
+                ),
+                vol.Optional(CONF_DEFAULT, default=False): bool,
+            }
+        )
+        return self.async_show_form(step_id="rate_type_add", data_schema=schema, errors=errors)
+
+    async def async_step_rate_type_edit(self, user_input: dict[str, Any] | None = None):
+        if user_input is None:
+            rate_type_ids = {rate[CONF_ID]: rate[CONF_NAME] for rate in self._rate_types}
+            return self.async_show_form(
+                step_id="rate_type_edit",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(CONF_ID): selector.SelectSelector(
+                            selector.SelectSelectorConfig(options=rate_type_ids, mode=selector.SelectSelectorMode.DROPDOWN)
+                        )
+                    }
+                ),
+            )
+        self._rate_type_id = user_input[CONF_ID]
+        return await self.async_step_rate_type_edit_detail()
+
+    async def async_step_rate_type_edit_detail(self, user_input: dict[str, Any] | None = None):
+        rate_types = self._rate_types
+        target = next(rate for rate in rate_types if rate[CONF_ID] == self._rate_type_id)
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            previous = dict(target)
+            target.update(
+                {
+                    CONF_NAME: user_input[CONF_NAME],
+                    CONF_RATE: float(user_input[CONF_RATE]),
+                    CONF_DEFAULT: user_input[CONF_DEFAULT],
+                }
+            )
+            validation = validate_rate_types(rate_types)
+            if validation.valid:
+                self._options[CONF_RATE_TYPES] = rate_types
+                return await self._async_save_options()
+            errors["base"] = validation.message or "invalid"
+            target.update(previous)
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_NAME, default=target[CONF_NAME]): str,
+                vol.Required(CONF_RATE, default=target[CONF_RATE]): selector.NumberSelector(
+                    selector.NumberSelectorConfig(min=0, step=0.0001, mode=selector.NumberSelectorMode.BOX)
+                ),
+                vol.Optional(CONF_DEFAULT, default=target.get(CONF_DEFAULT, False)): bool,
+            }
+        )
+        return self.async_show_form(step_id="rate_type_edit_detail", data_schema=schema, errors=errors)
+
+    async def async_step_rate_type_delete(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            rate_types = self._rate_types
+            rate_type_id = user_input[CONF_ID]
+            rules = self._rules
+            if any(rule[CONF_RATE_TYPE] == rate_type_id for rule in rules):
+                errors["base"] = "Rate type is used by a rule."
+            else:
+                rate_types = [rate for rate in rate_types if rate[CONF_ID] != rate_type_id]
+                validation = validate_rate_types(rate_types)
+                if validation.valid:
+                    self._options[CONF_RATE_TYPES] = rate_types
+                    return await self._async_save_options()
+                errors["base"] = validation.message or "invalid"
+
+        rate_type_ids = {rate[CONF_ID]: rate[CONF_NAME] for rate in self._rate_types}
+        return self.async_show_form(
+            step_id="rate_type_delete",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_ID): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=rate_type_ids, mode=selector.SelectSelectorMode.DROPDOWN)
+                    )
+                }
+            ),
+            errors=errors,
+        )
+
+    async def async_step_rules(self, user_input: dict[str, Any] | None = None):
+        return self.async_show_menu(
+            step_id="rules",
+            menu_options={
+                "rule_add": "Add rule",
+                "rule_edit": "Edit rule",
+                "rule_delete": "Delete rule",
+            },
+        )
+
+    async def async_step_rule_add(self, user_input: dict[str, Any] | None = None):
+        errors: dict[str, str] = {}
+        if not self._rate_types:
+            return self.async_show_form(
+                step_id="rule_add",
+                data_schema=vol.Schema({}),
+                errors={"base": "Add a rate type before creating rules."},
+            )
+        if user_input is not None:
+            rule_id = user_input.get(CONF_ID) or str(uuid.uuid4())
+            rule = {
+                CONF_ID: rule_id,
+                CONF_NAME: user_input[CONF_NAME],
+                CONF_RATE_TYPE: user_input[CONF_RATE_TYPE],
+                CONF_MONTHS: list(user_input.get(CONF_MONTHS, [])),
+                CONF_WEEKDAYS: list(user_input.get(CONF_WEEKDAYS, [])),
+                CONF_PERIODS: [],
+            }
+            rules = self._rules + [rule]
+            validation = validate_rules(rules, self._rate_types)
+            if validation.valid:
+                self._options[CONF_RULES] = rules
+                self._rule_id = rule_id
+                return await self.async_step_rule_periods_menu()
+            errors["base"] = validation.message or "invalid"
+
+        schema = self._rule_schema()
+        return self.async_show_form(step_id="rule_add", data_schema=schema, errors=errors)
+
+    async def async_step_rule_edit(self, user_input: dict[str, Any] | None = None):
+        if user_input is None:
+            rule_ids = {rule[CONF_ID]: rule[CONF_NAME] for rule in self._rules}
+            return self.async_show_form(
+                step_id="rule_edit",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(CONF_ID): selector.SelectSelector(
+                            selector.SelectSelectorConfig(options=rule_ids, mode=selector.SelectSelectorMode.DROPDOWN)
+                        )
+                    }
+                ),
+            )
+        self._rule_id = user_input[CONF_ID]
+        return await self.async_step_rule_edit_detail()
+
+    async def async_step_rule_edit_detail(self, user_input: dict[str, Any] | None = None):
+        rules = self._rules
+        rule = next(rule for rule in rules if rule[CONF_ID] == self._rule_id)
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            previous = dict(rule)
+            rule.update(
+                {
+                    CONF_NAME: user_input[CONF_NAME],
+                    CONF_RATE_TYPE: user_input[CONF_RATE_TYPE],
+                    CONF_MONTHS: list(user_input.get(CONF_MONTHS, [])),
+                    CONF_WEEKDAYS: list(user_input.get(CONF_WEEKDAYS, [])),
+                }
+            )
+            validation = validate_rules(rules, self._rate_types)
+            if validation.valid:
+                self._options[CONF_RULES] = rules
+                return await self.async_step_rule_periods_menu()
+            errors["base"] = validation.message or "invalid"
+            rule.update(previous)
+
+        schema = self._rule_schema(defaults=rule)
+        return self.async_show_form(step_id="rule_edit_detail", data_schema=schema, errors=errors)
+
+    async def async_step_rule_delete(self, user_input: dict[str, Any] | None = None):
+        if user_input is not None:
+            rule_id = user_input[CONF_ID]
+            self._options[CONF_RULES] = [rule for rule in self._rules if rule[CONF_ID] != rule_id]
+            return await self._async_save_options()
+
+        rule_ids = {rule[CONF_ID]: rule[CONF_NAME] for rule in self._rules}
+        return self.async_show_form(
+            step_id="rule_delete",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_ID): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=rule_ids, mode=selector.SelectSelectorMode.DROPDOWN)
+                    )
+                }
+            ),
+        )
+
+    async def async_step_rule_periods_menu(self, user_input: dict[str, Any] | None = None):
+        return self.async_show_menu(
+            step_id="rule_periods_menu",
+            menu_options={
+                "period_add": "Add period",
+                "period_edit": "Edit period",
+                "period_delete": "Delete period",
+                "finish_rule": "Finish",
+            },
+        )
+
+    async def async_step_finish_rule(self, user_input: dict[str, Any] | None = None):
+        return await self._async_save_options()
+
+    async def async_step_period_add(self, user_input: dict[str, Any] | None = None):
+        return await self._period_form("period_add", user_input)
+
+    async def async_step_period_edit(self, user_input: dict[str, Any] | None = None):
+        if user_input is None:
+            rule = self._get_rule()
+            periods = rule.get(CONF_PERIODS, [])
+            if not periods:
+                return await self.async_step_rule_periods_menu()
+            period_options = {
+                str(index): f"{period[CONF_START]}-{period[CONF_END]}"
+                for index, period in enumerate(periods)
+            }
+            return self.async_show_form(
+                step_id="period_edit",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required("index"): selector.SelectSelector(
+                            selector.SelectSelectorConfig(options=period_options, mode=selector.SelectSelectorMode.DROPDOWN)
+                        )
+                    }
+                ),
+            )
+        self._period_index = int(user_input["index"])
+        return await self._period_form("period_edit_detail", None)
+
+    async def async_step_period_edit_detail(self, user_input: dict[str, Any] | None = None):
+        return await self._period_form("period_edit_detail", user_input)
+
+    async def async_step_period_delete(self, user_input: dict[str, Any] | None = None):
+        rule = self._get_rule()
+        if user_input is not None:
+            index = int(user_input["index"])
+            removed = rule[CONF_PERIODS].pop(index)
+            validation = validate_rules(self._rules, self._rate_types)
+            if validation.valid:
+                return await self.async_step_rule_periods_menu()
+            rule[CONF_PERIODS].insert(index, removed)
+
+        periods = rule.get(CONF_PERIODS, [])
+        if not periods:
+            return await self.async_step_rule_periods_menu()
+        period_options = {
+            str(index): f"{period[CONF_START]}-{period[CONF_END]}"
+            for index, period in enumerate(periods)
+        }
+        return self.async_show_form(
+            step_id="period_delete",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("index"): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=period_options, mode=selector.SelectSelectorMode.DROPDOWN)
+                    )
+                }
+            ),
+        )
+
+    def _rule_schema(self, defaults: dict[str, Any] | None = None) -> vol.Schema:
+        defaults = defaults or {}
+        rate_types = self._rate_types
+        rate_type_options = {rate[CONF_ID]: rate[CONF_NAME] for rate in rate_types}
+        return vol.Schema(
+            {
+                vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "")): str,
+                vol.Required(CONF_RATE_TYPE, default=defaults.get(CONF_RATE_TYPE)): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=rate_type_options, mode=selector.SelectSelectorMode.DROPDOWN)
+                ),
+                vol.Optional(CONF_MONTHS, default=defaults.get(CONF_MONTHS, [])): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=MONTH_OPTIONS, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN)
+                ),
+                vol.Optional(CONF_WEEKDAYS, default=defaults.get(CONF_WEEKDAYS, [])): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=WEEKDAY_OPTIONS, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN)
+                ),
+            }
+        )
+
+    def _get_rule(self) -> dict[str, Any]:
+        return next(rule for rule in self._rules if rule[CONF_ID] == self._rule_id)
+
+    async def _period_form(self, step_id: str, user_input: dict[str, Any] | None):
+        rule = self._get_rule()
+        periods = list(rule.get(CONF_PERIODS, []))
+        errors: dict[str, str] = {}
+        defaults: dict[str, Any] = {}
+        if step_id == "period_edit_detail" and self._period_index is not None:
+            defaults = periods[self._period_index]
+        if user_input is not None:
+            new_period = {CONF_START: user_input[CONF_START], CONF_END: user_input[CONF_END]}
+            previous_periods = list(periods)
+            if step_id == "period_add":
+                periods.append(new_period)
+            else:
+                periods[self._period_index] = new_period
+            rule[CONF_PERIODS] = periods
+            validation = validate_rules(self._rules, self._rate_types)
+            if validation.valid:
+                return await self.async_step_rule_periods_menu()
+            errors["base"] = validation.message or "invalid"
+            rule[CONF_PERIODS] = previous_periods
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_START, default=defaults.get(CONF_START, "00:00")): selector.TimeSelector(),
+                vol.Required(CONF_END, default=defaults.get(CONF_END, "00:00")): selector.TimeSelector(),
+            }
+        )
+        return self.async_show_form(step_id=step_id, data_schema=schema, errors=errors)
+
+    async def _async_save_options(self):
+        return self.async_create_entry(title="", data=self._options)
