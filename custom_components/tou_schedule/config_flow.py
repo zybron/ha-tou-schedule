@@ -103,7 +103,6 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 rate[CONF_DEFAULT] = False
 
     async def _save_options(self, return_step: str = "init"):
-        self._config_entry.options = self._options
         self.hass.config_entries.async_update_entry(self._config_entry, options=self._options)
         if return_step == "rate_types":
             return await self.async_step_rate_types()
