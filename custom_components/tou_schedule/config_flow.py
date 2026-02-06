@@ -90,20 +90,13 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
             step_id="init",
-            menu_options={
-                "rate_types": "Manage rate types",
-                "rules": "Manage rules",
-            },
+            menu_options=["rate_types", "rules"],
         )
 
     async def async_step_rate_types(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
             step_id="rate_types",
-            menu_options={
-                "rate_type_add": "Add rate type",
-                "rate_type_edit": "Edit rate type",
-                "rate_type_delete": "Delete rate type",
-            },
+            menu_options=["rate_type_add", "rate_type_edit", "rate_type_delete"],
         )
 
     async def async_step_rate_type_add(self, user_input: dict[str, Any] | None = None):
@@ -215,11 +208,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_rules(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
             step_id="rules",
-            menu_options={
-                "rule_add": "Add rule",
-                "rule_edit": "Edit rule",
-                "rule_delete": "Delete rule",
-            },
+            menu_options=["rule_add", "rule_edit", "rule_delete"],
         )
 
     async def async_step_rule_add(self, user_input: dict[str, Any] | None = None):
@@ -312,12 +301,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_rule_periods_menu(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
             step_id="rule_periods_menu",
-            menu_options={
-                "period_add": "Add period",
-                "period_edit": "Edit period",
-                "period_delete": "Delete period",
-                "finish_rule": "Finish",
-            },
+            menu_options=["period_add", "period_edit", "period_delete", "finish_rule"],
         )
 
     async def async_step_finish_rule(self, user_input: dict[str, Any] | None = None):

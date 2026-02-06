@@ -13,11 +13,20 @@
     "step": {
       "init": {
         "title": "TOU Schedule options",
-        "description": "Configure rate types (prices) and rules (when each price applies). Start with rate types, then build rules and periods."
+        "description": "Configure rate types (prices) and rules (when each price applies). Start with rate types, then build rules and periods.",
+        "menu_options": {
+          "rate_types": "Manage rate types",
+          "rules": "Manage rules"
+        }
       },
       "rate_types": {
         "title": "Manage rate types",
-        "description": "Rate types define the price values you reference in rules. Add at least one rate type before creating rules."
+        "description": "Rate types define the price values you reference in rules. Add at least one rate type before creating rules.",
+        "menu_options": {
+          "rate_type_add": "Add rate type",
+          "rate_type_edit": "Edit rate type",
+          "rate_type_delete": "Delete rate type"
+        }
       },
       "rate_type_add": {
         "title": "Add rate type",
@@ -37,7 +46,12 @@
       },
       "rules": {
         "title": "Manage rules",
-        "description": "Rules define which rate type applies by month, weekday, and time periods."
+        "description": "Rules define which rate type applies by month, weekday, and time periods.",
+        "menu_options": {
+          "rule_add": "Add rule",
+          "rule_edit": "Edit rule",
+          "rule_delete": "Delete rule"
+        }
       },
       "rule_add": {
         "title": "Add rule",
@@ -57,7 +71,13 @@
       },
       "rule_periods_menu": {
         "title": "Rule periods",
-        "description": "Add, edit, or delete the time periods for this rule. Periods use 24-hour time."
+        "description": "Add, edit, or delete the time periods for this rule. Periods use 24-hour time.",
+        "menu_options": {
+          "period_add": "Add period",
+          "period_edit": "Edit period",
+          "period_delete": "Delete period",
+          "finish_rule": "Finish"
+        }
       },
       "period_add": {
         "title": "Add period",
