@@ -88,6 +88,29 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     def _rules(self) -> list[dict[str, Any]]:
         return list(self._options.get(CONF_RULES, []))
 
+    def _normalize_rate_types(self, rate_types: list[dict[str, Any]]) -> None:
+        """Ensure exactly one default rate type is selected."""
+        defaults = [rate for rate in rate_types if rate.get(CONF_DEFAULT)]
+        if not rate_types:
+            return
+        if not defaults:
+            rate_types[0][CONF_DEFAULT] = True
+            return
+        # If multiple defaults, keep the first and unset the rest.
+        keep_id = defaults[0].get(CONF_ID)
+        for rate in rate_types:
+            if rate.get(CONF_ID) != keep_id and rate.get(CONF_DEFAULT):
+                rate[CONF_DEFAULT] = False
+
+    async def _save_options(self, return_step: str = "init"):
+        self._config_entry.options = self._options
+        self.hass.config_entries.async_update_entry(self._config_entry, options=self._options)
+        if return_step == "rate_types":
+            return await self.async_step_rate_types()
+        if return_step == "rules":
+            return await self.async_step_rules()
+        return await self.async_step_init()
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
             step_id="init",
@@ -112,10 +135,11 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                     CONF_DEFAULT: user_input[CONF_DEFAULT],
                 }
             )
+            self._normalize_rate_types(rate_types)
             validation = validate_rate_types(rate_types)
             if validation.valid:
                 self._options[CONF_RATE_TYPES] = rate_types
-                return await self._async_save_options()
+                return await self._save_options(return_step="rate_types")
             errors["base"] = validation.message or "invalid"
 
         schema = vol.Schema(
@@ -157,10 +181,11 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                     CONF_DEFAULT: user_input[CONF_DEFAULT],
                 }
             )
+            self._normalize_rate_types(rate_types)
             validation = validate_rate_types(rate_types)
             if validation.valid:
                 self._options[CONF_RATE_TYPES] = rate_types
-                return await self._async_save_options()
+                return await self._save_options(return_step="rate_types")
             errors["base"] = validation.message or "invalid"
             target.update(previous)
 
@@ -183,10 +208,11 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 errors["base"] = "Rate type is used by a rule."
             else:
                 rate_types = [rate for rate in rate_types if rate[CONF_ID] != rate_type_id]
+                self._normalize_rate_types(rate_types)
                 validation = validate_rate_types(rate_types)
                 if validation.valid:
                     self._options[CONF_RATE_TYPES] = rate_types
-                    return await self._async_save_options()
+                    return await self._save_options(return_step="rate_types")
                 errors["base"] = validation.message or "invalid"
 
         rate_type_ids = {rate[CONF_ID]: rate[CONF_NAME] for rate in self._rate_types}
@@ -281,7 +307,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             rule_id = user_input[CONF_ID]
             self._options[CONF_RULES] = [rule for rule in self._rules if rule[CONF_ID] != rule_id]
-            return await self._async_save_options()
+            return await self._save_options(return_step="rules")
 
         rule_ids = {rule[CONF_ID]: rule[CONF_NAME] for rule in self._rules}
         return self.async_show_form(
@@ -302,7 +328,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_finish_rule(self, user_input: dict[str, Any] | None = None):
-        return await self._async_save_options()
+        return await self._save_options(return_step="rules")
 
     async def async_step_period_add(self, user_input: dict[str, Any] | None = None):
         return await self._period_form("period_add", user_input)
