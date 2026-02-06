@@ -1,9 +1,9 @@
 {
   "domain": "tou_schedule",
   "name": "TOU Schedule",
-  "codeowners": [],
+  "codeowners": ["@zybron"],
   "config_flow": true,
-  "documentation": "https://example.com/tou_schedule",
+  "documentation": "https://github.com/zybron/ha-tou-schedule",
   "integration_type": "service",
   "iot_class": "local_polling",
   "requirements": [],
