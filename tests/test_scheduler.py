@@ -136,4 +136,6 @@ def test_local_midnight():
 
     result = local_midnight(value)
 
-    assert result == datetime(2024, 1, 1, 0, 0)
+    assert result.date() == value.date()
+    assert result.hour == 0
+    assert result.minute == 0

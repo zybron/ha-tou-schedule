@@ -1,7 +1,7 @@
 """Constants for the TOU schedule integration."""
 
 DOMAIN = "tou_schedule"
-PLATFORMS = ["sensor", "binary_sensor"]
+PLATFORMS = ["sensor", "binary_sensor", "number"]
 
 CONF_RATE_TYPES = "rate_types"
 CONF_RULES = "rules"
@@ -26,4 +26,5 @@ ATTR_PRICES_TODAY = "prices_today"
 ATTR_PRICES_TOMORROW = "prices_tomorrow"
 ATTR_ACTIVE_RULE = "active_rule_id"
 ATTR_ACTIVE_RATE_TYPE = "active_rate_type"
+ATTR_ACTIVE_RATE_TYPE_ID = "active_rate_type_id"
 ATTR_NEXT_TRANSITION = "next_transition"

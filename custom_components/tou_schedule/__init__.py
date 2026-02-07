@@ -11,6 +11,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    ATTR_ACTIVE_RATE_TYPE_ID,
     ATTR_ACTIVE_RATE_TYPE,
     ATTR_ACTIVE_RULE,
     ATTR_NEXT_TRANSITION,
@@ -69,7 +70,8 @@ class TouScheduleCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return {
             "active_rate": active_rate,
             ATTR_ACTIVE_RULE: active_rate.rule_id,
-            ATTR_ACTIVE_RATE_TYPE: active_rate.rate_type_id,
+            ATTR_ACTIVE_RATE_TYPE: active_rate.rate_type_name,
+            ATTR_ACTIVE_RATE_TYPE_ID: active_rate.rate_type_id,
             ATTR_NEXT_TRANSITION: next_change.isoformat() if next_change else None,
             ATTR_PRICES_TODAY: prices_today,
             ATTR_PRICES_TOMORROW: prices_tomorrow,
