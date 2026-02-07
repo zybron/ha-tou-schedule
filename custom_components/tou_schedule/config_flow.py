@@ -274,8 +274,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 CONF_ID: rule_id,
                 CONF_NAME: user_input[CONF_NAME],
                 CONF_RATE_TYPE: user_input[CONF_RATE_TYPE],
-                CONF_MONTHS: list(user_input.get(CONF_MONTHS, [])),
-                CONF_WEEKDAYS: list(user_input.get(CONF_WEEKDAYS, [])),
+                CONF_MONTHS: [int(value) for value in user_input.get(CONF_MONTHS, [])],
+                CONF_WEEKDAYS: [int(value) for value in user_input.get(CONF_WEEKDAYS, [])],
                 CONF_PERIODS: [],
             }
             rules = self._rules + [rule]
@@ -327,8 +327,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 {
                     CONF_NAME: user_input[CONF_NAME],
                     CONF_RATE_TYPE: user_input[CONF_RATE_TYPE],
-                    CONF_MONTHS: list(user_input.get(CONF_MONTHS, [])),
-                    CONF_WEEKDAYS: list(user_input.get(CONF_WEEKDAYS, [])),
+                    CONF_MONTHS: [int(value) for value in user_input.get(CONF_MONTHS, [])],
+                    CONF_WEEKDAYS: [int(value) for value in user_input.get(CONF_WEEKDAYS, [])],
                 }
             )
             validation = validate_rules(rules, self._rate_types)
@@ -458,6 +458,14 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         rate_type_options = [
             {"label": rate[CONF_NAME], "value": rate[CONF_ID]} for rate in rate_types
         ]
+        month_options = [
+            {"label": label, "value": str(value)} for value, label in MONTH_OPTIONS.items()
+        ]
+        weekday_options = [
+            {"label": label, "value": str(value)} for value, label in WEEKDAY_OPTIONS.items()
+        ]
+        default_months = [str(value) for value in defaults.get(CONF_MONTHS, [])]
+        default_weekdays = [str(value) for value in defaults.get(CONF_WEEKDAYS, [])]
         return vol.Schema(
             {
                 vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "")): str,
@@ -466,18 +474,14 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                         options=rate_type_options, mode=selector.SelectSelectorMode.DROPDOWN
                     )
                 ),
-                vol.Optional(CONF_MONTHS, default=defaults.get(CONF_MONTHS, [])): selector.SelectSelector(
+                vol.Optional(CONF_MONTHS, default=default_months): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=self._select_options(MONTH_OPTIONS),
-                        multiple=True,
-                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        options=month_options, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN
                     )
                 ),
-                vol.Optional(CONF_WEEKDAYS, default=defaults.get(CONF_WEEKDAYS, [])): selector.SelectSelector(
+                vol.Optional(CONF_WEEKDAYS, default=default_weekdays): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=self._select_options(WEEKDAY_OPTIONS),
-                        multiple=True,
-                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        options=weekday_options, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN
                     )
                 ),
             }
