@@ -13,12 +13,16 @@
     "step": {
       "init": {
         "title": "TOU Schedule options",
-        "description": "Configure rate types (prices) and rules (when each price applies). Start with rate types, then build rules and periods.",
+        "description": "Configure rate types (prices) and rules (when each price applies). Start with the default rate, then add more rate types and rules.",
         "menu_options": {
           "rate_types": "Manage rate types",
           "rules": "Manage rules",
           "back": "Back"
         }
+      },
+      "default_rate": {
+        "title": "Set default rate",
+        "description": "Create the default rate used when no rule applies."
       },
       "rate_types": {
         "title": "Manage rate types",
@@ -40,7 +44,7 @@
       },
       "rate_type_edit_detail": {
         "title": "Update rate type",
-        "description": "Adjust the name, price, or default selection."
+        "description": "Adjust the name or price for this rate type."
       },
       "rate_type_delete": {
         "title": "Delete rate type",

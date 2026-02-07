@@ -12,6 +12,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import TouScheduleCoordinator, get_active_rate_type
 from .const import (
     ATTR_ACTIVE_RATE_TYPE,
+    ATTR_ACTIVE_RATE_TYPE_ID,
     ATTR_ACTIVE_RULE,
     ATTR_NEXT_TRANSITION,
     ATTR_PRICES_TODAY,
@@ -82,6 +83,12 @@ class TouActiveRateTypeSensor(TouBaseSensor):
     @property
     def native_value(self) -> str:
         return self.coordinator.data[ATTR_ACTIVE_RATE_TYPE]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            ATTR_ACTIVE_RATE_TYPE_ID: self.coordinator.data[ATTR_ACTIVE_RATE_TYPE_ID],
+        }
 
 
 class TouNextTransitionSensor(TouBaseSensor):

@@ -119,6 +119,12 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
             if rate.get(CONF_ID) != keep_id and rate.get(CONF_DEFAULT):
                 rate[CONF_DEFAULT] = False
 
+    def _default_rate_type(self) -> dict[str, Any] | None:
+        for rate in self._rate_types:
+            if rate.get(CONF_DEFAULT):
+                return rate
+        return None
+
     async def _save_options(self, return_step: str = "init"):
         self._log_step("_save_options", {"return_step": return_step})
         self.hass.config_entries.async_update_entry(self._config_entry, options=self._options)
@@ -130,10 +136,38 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         self._log_step("init", user_input)
+        if not self._rate_types:
+            return await self.async_step_default_rate()
         return self.async_show_menu(
             step_id="init",
             menu_options=["rate_types", "rules"],
         )
+
+    async def async_step_default_rate(self, user_input: dict[str, Any] | None = None):
+        self._log_step("default_rate", user_input)
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            rate_types = [
+                {
+                    CONF_ID: "default",
+                    CONF_NAME: user_input[CONF_NAME],
+                    CONF_RATE: float(user_input[CONF_RATE]),
+                    CONF_DEFAULT: True,
+                }
+            ]
+            validation = validate_rate_types(rate_types)
+            if validation.valid:
+                self._options[CONF_RATE_TYPES] = rate_types
+                return await self._save_options(return_step="init")
+            errors["base"] = validation.message or "invalid"
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_NAME): str,
+                vol.Required(CONF_RATE): vol.Coerce(float),
+            }
+        )
+        return self.async_show_form(step_id="default_rate", data_schema=schema, errors=errors)
 
     async def async_step_rate_types(self, user_input: dict[str, Any] | None = None):
         self._log_step("rate_types", user_input)
@@ -152,10 +186,9 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                     CONF_ID: user_input[CONF_ID],
                     CONF_NAME: user_input[CONF_NAME],
                     CONF_RATE: float(user_input[CONF_RATE]),
-                    CONF_DEFAULT: user_input[CONF_DEFAULT],
+                    CONF_DEFAULT: False,
                 }
             )
-            self._normalize_rate_types(rate_types)
             validation = validate_rate_types(rate_types)
             if validation.valid:
                 self._options[CONF_RATE_TYPES] = rate_types
@@ -167,7 +200,6 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(CONF_ID): str,
                 vol.Required(CONF_NAME): str,
                 vol.Required(CONF_RATE): vol.Coerce(float),
-                vol.Optional(CONF_DEFAULT, default=False): bool,
             }
         )
         return self.async_show_form(step_id="rate_type_add", data_schema=schema, errors=errors)
@@ -212,10 +244,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 {
                     CONF_NAME: user_input[CONF_NAME],
                     CONF_RATE: float(user_input[CONF_RATE]),
-                    CONF_DEFAULT: user_input[CONF_DEFAULT],
                 }
             )
-            self._normalize_rate_types(rate_types)
             validation = validate_rate_types(rate_types)
             if validation.valid:
                 self._options[CONF_RATE_TYPES] = rate_types
@@ -223,13 +253,11 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
             errors["base"] = validation.message or "invalid"
             target.update(previous)
 
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_NAME, default=target[CONF_NAME]): str,
-                vol.Required(CONF_RATE, default=target[CONF_RATE]): vol.Coerce(float),
-                vol.Optional(CONF_DEFAULT, default=target.get(CONF_DEFAULT, False)): bool,
-            }
-        )
+        schema_fields = {
+            vol.Required(CONF_NAME, default=target[CONF_NAME]): str,
+            vol.Required(CONF_RATE, default=target[CONF_RATE]): vol.Coerce(float),
+        }
+        schema = vol.Schema(schema_fields)
         return self.async_show_form(step_id="rate_type_edit_detail", data_schema=schema, errors=errors)
 
     async def async_step_rate_type_delete(self, user_input: dict[str, Any] | None = None):
@@ -245,6 +273,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 rules = list(self._config_entry.options.get(CONF_RULES, []))
             if any(rule[CONF_RATE_TYPE] == rate_type_id for rule in rules):
                 errors["base"] = "Rate type is used by a rule."
+            elif any(rate.get(CONF_DEFAULT) and rate.get(CONF_ID) == rate_type_id for rate in rate_types):
+                errors["base"] = "Default rate type cannot be deleted."
             else:
                 rate_types = [rate for rate in rate_types if rate[CONF_ID] != rate_type_id]
                 self._normalize_rate_types(rate_types)

@@ -38,6 +38,13 @@ async def test_options_flow_add_rate_type(hass):
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
 
     result = await _init_options_flow(hass, entry)
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "default_rate"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_NAME: "Normal", CONF_RATE: 0.15},
+    )
     assert result["type"] == FlowResultType.MENU
 
     result = await _goto_menu(hass, result["flow_id"], "rate_types")
@@ -52,38 +59,34 @@ async def test_options_flow_add_rate_type(hass):
             CONF_ID: "peak",
             CONF_NAME: "Peak",
             CONF_RATE: 0.25,
-            CONF_DEFAULT: True,
         },
     )
     assert result["type"] == FlowResultType.MENU
     assert result["step_id"] == "rate_types"
-    assert entry.options[CONF_RATE_TYPES][0][CONF_ID] == "peak"
+    assert entry.options[CONF_RATE_TYPES][0][CONF_ID] == "default"
     assert entry.options[CONF_RATE_TYPES][0][CONF_DEFAULT] is True
+    assert entry.options[CONF_RATE_TYPES][1][CONF_ID] == "peak"
+    assert entry.options[CONF_RATE_TYPES][1][CONF_DEFAULT] is False
 
 
 @pytest.mark.asyncio
 async def test_options_flow_add_rate_type_duplicate_id_error(hass):
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={},
-        options={
-            CONF_RATE_TYPES: [
-                {CONF_ID: "peak", CONF_NAME: "Peak", CONF_RATE: 0.25, CONF_DEFAULT: True}
-            ]
-        },
-    )
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
 
     result = await _init_options_flow(hass, entry)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_NAME: "Normal", CONF_RATE: 0.15},
+    )
     result = await _goto_menu(hass, result["flow_id"], "rate_types")
     result = await _goto_menu(hass, result["flow_id"], "rate_type_add")
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         {
-            CONF_ID: "peak",
+            CONF_ID: "default",
             CONF_NAME: "Peak 2",
             CONF_RATE: 0.3,
-            CONF_DEFAULT: False,
         },
     )
     assert result["type"] == FlowResultType.FORM
@@ -117,7 +120,6 @@ async def test_options_flow_edit_rate_type(hass):
         {
             CONF_NAME: "Super Off Peak",
             CONF_RATE: 0.08,
-            CONF_DEFAULT: True,
         },
     )
     assert result["type"] == FlowResultType.MENU
@@ -154,6 +156,30 @@ async def test_options_flow_delete_rate_type(hass):
 
 
 @pytest.mark.asyncio
+async def test_options_flow_delete_default_rate_type_blocked(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={
+            CONF_RATE_TYPES: [
+                {CONF_ID: "default", CONF_NAME: "Default", CONF_RATE: 0.1, CONF_DEFAULT: True},
+                {CONF_ID: "peak", CONF_NAME: "Peak", CONF_RATE: 0.3, CONF_DEFAULT: False},
+            ]
+        },
+    )
+
+    result = await _init_options_flow(hass, entry)
+    result = await _goto_menu(hass, result["flow_id"], "rate_types")
+    result = await _goto_menu(hass, result["flow_id"], "rate_type_delete")
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_ID: "default"}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"]["base"] == "Default rate type cannot be deleted."
+
+
+@pytest.mark.asyncio
 async def test_options_flow_delete_rate_type_used_by_rule_error(hass):
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -187,15 +213,12 @@ async def test_options_flow_delete_rate_type_used_by_rule_error(hass):
 
 
 @pytest.mark.asyncio
-async def test_options_flow_rule_add_requires_rate_type(hass):
+async def test_options_flow_requires_default_rate(hass):
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
 
     result = await _init_options_flow(hass, entry)
-    result = await _goto_menu(hass, result["flow_id"], "rules")
-    result = await _goto_menu(hass, result["flow_id"], "rule_add")
-
     assert result["type"] == FlowResultType.FORM
-    assert result["errors"]["base"] == "Add a rate type before creating rules."
+    assert result["step_id"] == "default_rate"
 
 
 @pytest.mark.asyncio
