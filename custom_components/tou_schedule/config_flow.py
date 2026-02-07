@@ -1,6 +1,7 @@
 """Config flow for TOU schedule."""
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any
 
@@ -52,6 +53,8 @@ WEEKDAY_OPTIONS = {
     6: "Sunday",
 }
 
+_LOGGER = logging.getLogger(__name__)
+
 
 
 class TouScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -91,6 +94,17 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     def _select_options(self, options: dict[int, str]) -> list[dict[str, Any]]:
         return [{"label": label, "value": value} for value, label in options.items()]
 
+    def _log_step(self, step_id: str, user_input: dict[str, Any] | None) -> None:
+        _LOGGER.debug(
+            "Options flow step=%s entry_id=%s rule_id=%s rate_type_id=%s period_index=%s input=%s",
+            step_id,
+            self._config_entry.entry_id,
+            self._rule_id,
+            self._rate_type_id,
+            self._period_index,
+            user_input,
+        )
+
     def _normalize_rate_types(self, rate_types: list[dict[str, Any]]) -> None:
         """Ensure exactly one default rate type is selected."""
         defaults = [rate for rate in rate_types if rate.get(CONF_DEFAULT)]
@@ -106,6 +120,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 rate[CONF_DEFAULT] = False
 
     async def _save_options(self, return_step: str = "init"):
+        self._log_step("_save_options", {"return_step": return_step})
         self.hass.config_entries.async_update_entry(self._config_entry, options=self._options)
         if return_step == "rate_types":
             return await self.async_step_rate_types()
@@ -114,18 +129,21 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         return await self.async_step_init()
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        self._log_step("init", user_input)
         return self.async_show_menu(
             step_id="init",
             menu_options=["rate_types", "rules"],
         )
 
     async def async_step_rate_types(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rate_types", user_input)
         return self.async_show_menu(
             step_id="rate_types",
             menu_options=["rate_type_add", "rate_type_edit", "rate_type_delete", "back"],
         )
 
     async def async_step_rate_type_add(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rate_type_add", user_input)
         errors: dict[str, str] = {}
         if user_input is not None:
             rate_types = self._rate_types
@@ -155,6 +173,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(step_id="rate_type_add", data_schema=schema, errors=errors)
 
     async def async_step_rate_type_edit(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rate_type_edit", user_input)
         if user_input is None:
             if not self._rate_types:
                 return self.async_show_form(
@@ -183,6 +202,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         return await self.async_step_rate_type_edit_detail()
 
     async def async_step_rate_type_edit_detail(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rate_type_edit_detail", user_input)
         rate_types = self._rate_types
         target = next(rate for rate in rate_types if rate[CONF_ID] == self._rate_type_id)
         errors: dict[str, str] = {}
@@ -213,6 +233,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(step_id="rate_type_edit_detail", data_schema=schema, errors=errors)
 
     async def async_step_rate_type_delete(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rate_type_delete", user_input)
         errors: dict[str, str] = {}
         if user_input is not None:
             if not self._rate_types:
@@ -255,12 +276,14 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_rules(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rules", user_input)
         return self.async_show_menu(
             step_id="rules",
             menu_options=["rule_add", "rule_edit", "rule_delete", "back"],
         )
 
     async def async_step_rule_add(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rule_add", user_input)
         errors: dict[str, str] = {}
         if not self._rate_types:
             return self.async_show_form(
@@ -290,6 +313,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(step_id="rule_add", data_schema=schema, errors=errors)
 
     async def async_step_rule_edit(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rule_edit", user_input)
         if user_input is None:
             if not self._rules:
                 return self.async_show_form(
@@ -318,6 +342,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         return await self.async_step_rule_edit_detail()
 
     async def async_step_rule_edit_detail(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rule_edit_detail", user_input)
         rules = self._rules
         rule = next(rule for rule in rules if rule[CONF_ID] == self._rule_id)
         errors: dict[str, str] = {}
@@ -342,6 +367,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(step_id="rule_edit_detail", data_schema=schema, errors=errors)
 
     async def async_step_rule_delete(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rule_delete", user_input)
         if user_input is not None:
             if not self._rules:
                 return await self.async_step_rules()
@@ -372,18 +398,22 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_rule_periods_menu(self, user_input: dict[str, Any] | None = None):
+        self._log_step("rule_periods_menu", user_input)
         return self.async_show_menu(
             step_id="rule_periods_menu",
             menu_options=["period_add", "period_edit", "period_delete", "finish_rule", "back"],
         )
 
     async def async_step_finish_rule(self, user_input: dict[str, Any] | None = None):
+        self._log_step("finish_rule", user_input)
         return await self._save_options(return_step="rules")
 
     async def async_step_period_add(self, user_input: dict[str, Any] | None = None):
+        self._log_step("period_add", user_input)
         return await self._period_form("period_add", user_input)
 
     async def async_step_period_edit(self, user_input: dict[str, Any] | None = None):
+        self._log_step("period_edit", user_input)
         if user_input is None:
             rule = self._get_rule()
             periods = rule.get(CONF_PERIODS, [])
@@ -413,9 +443,11 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         return await self._period_form("period_edit_detail", None)
 
     async def async_step_period_edit_detail(self, user_input: dict[str, Any] | None = None):
+        self._log_step("period_edit_detail", user_input)
         return await self._period_form("period_edit_detail", user_input)
 
     async def async_step_period_delete(self, user_input: dict[str, Any] | None = None):
+        self._log_step("period_delete", user_input)
         rule = self._get_rule()
         if user_input is not None:
             index = int(user_input["index"])
@@ -450,6 +482,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_back(self, user_input: dict[str, Any] | None = None):
+        self._log_step("back", user_input)
         return await self.async_step_init()
 
     def _rule_schema(self, defaults: dict[str, Any] | None = None) -> vol.Schema:
