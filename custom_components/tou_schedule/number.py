@@ -44,6 +44,10 @@ class TouRateTypeNumber(CoordinatorEntity[TouScheduleCoordinator], NumberEntity)
         self._rate_type_id = rate_type[CONF_ID]
         self._attr_unique_id = f"{entry.entry_id}_rate_{self._rate_type_id}"
         self._attr_name = rate_type[CONF_NAME]
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": "TOU Schedule",
+        }
 
     @property
     def native_value(self) -> float | None:
