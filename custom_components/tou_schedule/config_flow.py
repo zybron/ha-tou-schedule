@@ -492,10 +492,12 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
             {"label": rate[CONF_NAME], "value": rate[CONF_ID]} for rate in rate_types
         ]
         month_options = [
-            {"label": label, "value": str(value)} for value, label in MONTH_OPTIONS.items()
+            {"label": f"{value:02d} - {label}", "value": str(value)}
+            for value, label in MONTH_OPTIONS.items()
         ]
         weekday_options = [
-            {"label": label, "value": str(value)} for value, label in WEEKDAY_OPTIONS.items()
+            {"label": f"{value + 1} - {label}", "value": str(value)}
+            for value, label in WEEKDAY_OPTIONS.items()
         ]
         default_months = [str(value) for value in defaults.get(CONF_MONTHS, [])]
         default_weekdays = [str(value) for value in defaults.get(CONF_WEEKDAYS, [])]
