@@ -119,7 +119,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_rate_types(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
             step_id="rate_types",
-            menu_options=["rate_type_add", "rate_type_edit", "rate_type_delete"],
+            menu_options=["rate_type_add", "rate_type_edit", "rate_type_delete", "back"],
         )
 
     async def async_step_rate_type_add(self, user_input: dict[str, Any] | None = None):
@@ -153,13 +153,23 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_rate_type_edit(self, user_input: dict[str, Any] | None = None):
         if user_input is None:
-            rate_type_ids = {rate[CONF_ID]: rate[CONF_NAME] for rate in self._rate_types}
+            if not self._rate_types:
+                return self.async_show_form(
+                    step_id="rate_type_edit",
+                    data_schema=vol.Schema({}),
+                    errors={"base": "Add a rate type first."},
+                )
+            rate_type_ids = [
+                {"label": rate[CONF_NAME], "value": rate[CONF_ID]} for rate in self._rate_types
+            ]
             return self.async_show_form(
                 step_id="rate_type_edit",
                 data_schema=vol.Schema(
                     {
                         vol.Required(CONF_ID): selector.SelectSelector(
-                            selector.SelectSelectorConfig(options=rate_type_ids, mode=selector.SelectSelectorMode.DROPDOWN)
+                            selector.SelectSelectorConfig(
+                                options=rate_type_ids, mode=selector.SelectSelectorMode.DROPDOWN
+                            )
                         )
                     }
                 ),
@@ -214,13 +224,23 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                     return await self._save_options(return_step="rate_types")
                 errors["base"] = validation.message or "invalid"
 
-        rate_type_ids = {rate[CONF_ID]: rate[CONF_NAME] for rate in self._rate_types}
+        if not self._rate_types:
+            return self.async_show_form(
+                step_id="rate_type_delete",
+                data_schema=vol.Schema({}),
+                errors={"base": "Add a rate type first."},
+            )
+        rate_type_ids = [
+            {"label": rate[CONF_NAME], "value": rate[CONF_ID]} for rate in self._rate_types
+        ]
         return self.async_show_form(
             step_id="rate_type_delete",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_ID): selector.SelectSelector(
-                        selector.SelectSelectorConfig(options=rate_type_ids, mode=selector.SelectSelectorMode.DROPDOWN)
+                        selector.SelectSelectorConfig(
+                            options=rate_type_ids, mode=selector.SelectSelectorMode.DROPDOWN
+                        )
                     )
                 }
             ),
@@ -230,7 +250,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_rules(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
             step_id="rules",
-            menu_options=["rule_add", "rule_edit", "rule_delete"],
+            menu_options=["rule_add", "rule_edit", "rule_delete", "back"],
         )
 
     async def async_step_rule_add(self, user_input: dict[str, Any] | None = None):
@@ -264,13 +284,23 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_rule_edit(self, user_input: dict[str, Any] | None = None):
         if user_input is None:
-            rule_ids = {rule[CONF_ID]: rule[CONF_NAME] for rule in self._rules}
+            if not self._rules:
+                return self.async_show_form(
+                    step_id="rule_edit",
+                    data_schema=vol.Schema({}),
+                    errors={"base": "Add a rule first."},
+                )
+            rule_ids = [
+                {"label": rule[CONF_NAME], "value": rule[CONF_ID]} for rule in self._rules
+            ]
             return self.async_show_form(
                 step_id="rule_edit",
                 data_schema=vol.Schema(
                     {
                         vol.Required(CONF_ID): selector.SelectSelector(
-                            selector.SelectSelectorConfig(options=rule_ids, mode=selector.SelectSelectorMode.DROPDOWN)
+                            selector.SelectSelectorConfig(
+                                options=rule_ids, mode=selector.SelectSelectorMode.DROPDOWN
+                            )
                         )
                     }
                 ),
@@ -308,13 +338,23 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
             self._options[CONF_RULES] = [rule for rule in self._rules if rule[CONF_ID] != rule_id]
             return await self._save_options(return_step="rules")
 
-        rule_ids = {rule[CONF_ID]: rule[CONF_NAME] for rule in self._rules}
+        if not self._rules:
+            return self.async_show_form(
+                step_id="rule_delete",
+                data_schema=vol.Schema({}),
+                errors={"base": "Add a rule first."},
+            )
+        rule_ids = [
+            {"label": rule[CONF_NAME], "value": rule[CONF_ID]} for rule in self._rules
+        ]
         return self.async_show_form(
             step_id="rule_delete",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_ID): selector.SelectSelector(
-                        selector.SelectSelectorConfig(options=rule_ids, mode=selector.SelectSelectorMode.DROPDOWN)
+                        selector.SelectSelectorConfig(
+                            options=rule_ids, mode=selector.SelectSelectorMode.DROPDOWN
+                        )
                     )
                 }
             ),
@@ -323,7 +363,7 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_rule_periods_menu(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
             step_id="rule_periods_menu",
-            menu_options=["period_add", "period_edit", "period_delete", "finish_rule"],
+            menu_options=["period_add", "period_edit", "period_delete", "finish_rule", "back"],
         )
 
     async def async_step_finish_rule(self, user_input: dict[str, Any] | None = None):
@@ -347,7 +387,13 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 data_schema=vol.Schema(
                     {
                         vol.Required("index"): selector.SelectSelector(
-                            selector.SelectSelectorConfig(options=period_options, mode=selector.SelectSelectorMode.DROPDOWN)
+                            selector.SelectSelectorConfig(
+                                options=[
+                                    {"label": label, "value": value}
+                                    for value, label in period_options.items()
+                                ],
+                                mode=selector.SelectSelectorMode.DROPDOWN,
+                            )
                         )
                     }
                 ),
@@ -380,21 +426,34 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required("index"): selector.SelectSelector(
-                        selector.SelectSelectorConfig(options=period_options, mode=selector.SelectSelectorMode.DROPDOWN)
+                        selector.SelectSelectorConfig(
+                            options=[
+                                {"label": label, "value": value}
+                                for value, label in period_options.items()
+                            ],
+                            mode=selector.SelectSelectorMode.DROPDOWN,
+                        )
                     )
                 }
             ),
         )
 
+    async def async_step_back(self, user_input: dict[str, Any] | None = None):
+        return await self.async_step_init()
+
     def _rule_schema(self, defaults: dict[str, Any] | None = None) -> vol.Schema:
         defaults = defaults or {}
         rate_types = self._rate_types
-        rate_type_options = {rate[CONF_ID]: rate[CONF_NAME] for rate in rate_types}
+        rate_type_options = [
+            {"label": rate[CONF_NAME], "value": rate[CONF_ID]} for rate in rate_types
+        ]
         return vol.Schema(
             {
                 vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "")): str,
                 vol.Required(CONF_RATE_TYPE, default=defaults.get(CONF_RATE_TYPE)): selector.SelectSelector(
-                    selector.SelectSelectorConfig(options=rate_type_options, mode=selector.SelectSelectorMode.DROPDOWN)
+                    selector.SelectSelectorConfig(
+                        options=rate_type_options, mode=selector.SelectSelectorMode.DROPDOWN
+                    )
                 ),
                 vol.Optional(CONF_MONTHS, default=defaults.get(CONF_MONTHS, [])): selector.SelectSelector(
                     selector.SelectSelectorConfig(options=MONTH_OPTIONS, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN)

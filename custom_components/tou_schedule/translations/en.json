@@ -25,7 +25,8 @@
         "menu_options": {
           "rate_type_add": "Add rate type",
           "rate_type_edit": "Edit rate type",
-          "rate_type_delete": "Delete rate type"
+          "rate_type_delete": "Delete rate type",
+          "back": "Back"
         }
       },
       "rate_type_add": {
@@ -50,7 +51,8 @@
         "menu_options": {
           "rule_add": "Add rule",
           "rule_edit": "Edit rule",
-          "rule_delete": "Delete rule"
+          "rule_delete": "Delete rule",
+          "back": "Back"
         }
       },
       "rule_add": {
@@ -76,7 +78,8 @@
           "period_add": "Add period",
           "period_edit": "Edit period",
           "period_delete": "Delete period",
-          "finish_rule": "Finish"
+          "finish_rule": "Finish",
+          "back": "Back"
         }
       },
       "period_add": {
