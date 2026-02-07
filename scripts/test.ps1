@@ -9,4 +9,4 @@ if (-not (Test-Path ".venv")) {
 
 & .\.venv\Scripts\python -m pip install --upgrade "pip<23.2"
 & .\.venv\Scripts\python -m pip install -r requirements_test.txt
-& .\.venv\Scripts\python -m pytest -q
+& .\.venv\Scripts\python -m pytest -q -p no:pytest_socket
