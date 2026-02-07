@@ -1,5 +1,6 @@
 import pytest
 from homeassistant import loader
+from homeassistant.helpers import selector
 from homeassistant.data_entry_flow import FlowResultType
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -475,3 +476,47 @@ async def test_options_flow_period_add_invalid_time(hass):
     )
     assert result["type"] == FlowResultType.FORM
     assert result["errors"]["base"] == "Period start must be before end."
+
+
+@pytest.mark.asyncio
+async def test_rule_schema_uses_list_selectors(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={
+            CONF_RATE_TYPES: [
+                {CONF_ID: "default", CONF_NAME: "Default", CONF_RATE: 0.1, CONF_DEFAULT: True}
+            ]
+        },
+    )
+
+    result = await _init_options_flow(hass, entry)
+    result = await _goto_menu(hass, result["flow_id"], "rules")
+    result = await _goto_menu(hass, result["flow_id"], "rule_add")
+
+    schema = result["data_schema"]
+    months_selector = None
+    weekdays_selector = None
+    for key, value in schema.schema.items():
+        if getattr(key, "schema", None) == CONF_MONTHS:
+            months_selector = value
+        if getattr(key, "schema", None) == CONF_WEEKDAYS:
+            weekdays_selector = value
+
+    assert isinstance(months_selector, selector.SelectSelector)
+    months_config = months_selector.config
+    if isinstance(months_config, dict):
+        assert months_config.get("multiple") is True
+        assert months_config.get("mode") == selector.SelectSelectorMode.LIST
+    else:
+        assert months_config.multiple is True
+        assert months_config.mode == selector.SelectSelectorMode.LIST
+
+    assert isinstance(weekdays_selector, selector.SelectSelector)
+    weekdays_config = weekdays_selector.config
+    if isinstance(weekdays_config, dict):
+        assert weekdays_config.get("multiple") is True
+        assert weekdays_config.get("mode") == selector.SelectSelectorMode.LIST
+    else:
+        assert weekdays_config.multiple is True
+        assert weekdays_config.mode == selector.SelectSelectorMode.LIST

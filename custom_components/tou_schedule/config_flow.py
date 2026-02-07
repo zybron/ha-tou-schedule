@@ -543,12 +543,12 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                 ),
                 vol.Optional(CONF_MONTHS, default=default_months): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=month_options, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN
+                        options=month_options, multiple=True, mode=selector.SelectSelectorMode.LIST
                     )
                 ),
                 vol.Optional(CONF_WEEKDAYS, default=default_weekdays): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=weekday_options, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN
+                        options=weekday_options, multiple=True, mode=selector.SelectSelectorMode.LIST
                     )
                 ),
             }

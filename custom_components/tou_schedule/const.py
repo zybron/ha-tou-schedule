@@ -1,7 +1,7 @@
 """Constants for the TOU schedule integration."""
 
 DOMAIN = "tou_schedule"
-PLATFORMS = ["sensor", "binary_sensor"]
+PLATFORMS = ["sensor", "binary_sensor", "number"]
 
 CONF_RATE_TYPES = "rate_types"
 CONF_RULES = "rules"
