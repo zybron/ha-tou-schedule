@@ -241,6 +241,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
             rate_types = self._rate_types
             rate_type_id = user_input[CONF_ID]
             rules = self._rules
+            if not rules:
+                rules = list(self._config_entry.options.get(CONF_RULES, []))
             if any(rule[CONF_RATE_TYPE] == rate_type_id for rule in rules):
                 errors["base"] = "Rate type is used by a rule."
             else:
