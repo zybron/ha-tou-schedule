@@ -16,7 +16,8 @@
         "description": "Configure rate types (prices) and rules (when each price applies). Start with rate types, then build rules and periods.",
         "menu_options": {
           "rate_types": "Manage rate types",
-          "rules": "Manage rules"
+          "rules": "Manage rules",
+          "back": "Back"
         }
       },
       "rate_types": {

@@ -88,6 +88,9 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     def _rules(self) -> list[dict[str, Any]]:
         return list(self._options.get(CONF_RULES, []))
 
+    def _select_options(self, options: dict[int, str]) -> list[dict[str, Any]]:
+        return [{"label": label, "value": value} for value, label in options.items()]
+
     def _normalize_rate_types(self, rate_types: list[dict[str, Any]]) -> None:
         """Ensure exactly one default rate type is selected."""
         defaults = [rate for rate in rate_types if rate.get(CONF_DEFAULT)]
@@ -174,6 +177,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                     }
                 ),
             )
+        if not self._rate_types:
+            return await self.async_step_rate_types()
         self._rate_type_id = user_input[CONF_ID]
         return await self.async_step_rate_type_edit_detail()
 
@@ -210,6 +215,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_rate_type_delete(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
         if user_input is not None:
+            if not self._rate_types:
+                return await self.async_step_rate_types()
             rate_types = self._rate_types
             rate_type_id = user_input[CONF_ID]
             rules = self._rules
@@ -305,6 +312,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                     }
                 ),
             )
+        if not self._rules:
+            return await self.async_step_rules()
         self._rule_id = user_input[CONF_ID]
         return await self.async_step_rule_edit_detail()
 
@@ -334,6 +343,8 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_rule_delete(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
+            if not self._rules:
+                return await self.async_step_rules()
             rule_id = user_input[CONF_ID]
             self._options[CONF_RULES] = [rule for rule in self._rules if rule[CONF_ID] != rule_id]
             return await self._save_options(return_step="rules")
@@ -456,10 +467,18 @@ class TouScheduleOptionsFlow(config_entries.OptionsFlow):
                     )
                 ),
                 vol.Optional(CONF_MONTHS, default=defaults.get(CONF_MONTHS, [])): selector.SelectSelector(
-                    selector.SelectSelectorConfig(options=MONTH_OPTIONS, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN)
+                    selector.SelectSelectorConfig(
+                        options=self._select_options(MONTH_OPTIONS),
+                        multiple=True,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
                 ),
                 vol.Optional(CONF_WEEKDAYS, default=defaults.get(CONF_WEEKDAYS, [])): selector.SelectSelector(
-                    selector.SelectSelectorConfig(options=WEEKDAY_OPTIONS, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN)
+                    selector.SelectSelectorConfig(
+                        options=self._select_options(WEEKDAY_OPTIONS),
+                        multiple=True,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
                 ),
             }
         )
